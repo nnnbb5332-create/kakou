@@ -142,3 +142,33 @@ jobs:
 ```
 
 > ملاحظة: لو أردت، أقدر أضيف لك ملف GitHub Actions داخل المشروع الآن.
+
+
+## لماذا ظهر خطأ "prisma: not found"؟ (توضيح مهم)
+
+هذا الخطأ لا يعني أن الكود مكسور؛ يعني فقط أن **الحزم لم تُثبت بعد** في البيئة التي شغّلت فيها الأمر.
+
+- أمر `npm run build` يستدعي قبله `prebuild` وفيه `prisma generate`.
+- إذا لم يتم تنفيذ `npm install` أولًا، فلن يجد النظام `prisma` داخل `node_modules/.bin`.
+
+### الطريقة الصحيحة محليًا
+
+```bash
+npm install
+npm run build
+```
+
+### الطريقة الصحيحة على GitHub (Actions)
+
+تأكد أن Workflow فيه الترتيب التالي:
+1. `npm install`
+2. `npx prisma generate`
+3. `npm run build`
+
+وهو موجود فعلاً في `.github/workflows/ci.yml` في هذا المشروع.
+
+### إذا ما زال يفشل على GitHub
+
+- تأكد أن ملف `package.json` موجود في جذر المستودع.
+- تأكد أن الـ Workflow يعمل داخل نفس مسار المشروع (بدون `working-directory` خاطئ).
+- أعد تشغيل الـ workflow من تبويب Actions بعد آخر Push.
