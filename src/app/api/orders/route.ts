@@ -21,11 +21,18 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const data = schema.parse(await request.json());
-  const menuItems = await db.menuItem.findMany({ where: { id: { in: data.items.map((item) => item.menuItemId) } } });
+  const menuItems = await db.menuItem.findMany({
+    where: { id: { in: data.items.map((item) => item.menuItemId) } },
+    select: { id: true, price: true }
+  });
+
+  const menuItemPriceMap = new Map<string, number>(
+    menuItems.map((item) => [item.id, Number(item.price)])
+  );
 
   const subtotal = data.items.reduce((acc, line) => {
-    const item = menuItems.find((m) => m.id === line.menuItemId);
-    return acc + (item ? Number(item.price) * line.quantity : 0);
+    const itemPrice = menuItemPriceMap.get(line.menuItemId) ?? 0;
+    return acc + itemPrice * line.quantity;
   }, 0);
 
   const total = Math.max(0, subtotal - data.discount - data.loyaltyRedeemed / 100);
@@ -39,14 +46,11 @@ export async function POST(request: Request) {
       loyaltyRedeemed: data.loyaltyRedeemed,
       total,
       items: {
-        create: data.items.map((line) => {
-          const item = menuItems.find((m) => m.id === line.menuItemId);
-          return {
-            menuItemId: line.menuItemId,
-            quantity: line.quantity,
-            unitPrice: item?.price ?? 0
-          };
-        })
+        create: data.items.map((line) => ({
+          menuItemId: line.menuItemId,
+          quantity: line.quantity,
+          unitPrice: menuItemPriceMap.get(line.menuItemId) ?? 0
+        }))
       }
     },
     include: { items: true }
