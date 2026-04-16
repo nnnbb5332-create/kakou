@@ -21,13 +21,16 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const data = schema.parse(await request.json());
-  const menuItems = await db.menuItem.findMany({
+  const menuItems = (await db.menuItem.findMany({
     where: { id: { in: data.items.map((item) => item.menuItemId) } },
     select: { id: true, price: true }
-  });
+  })) as Array<{ id: string; price: number | string | { toString(): string } }>;
 
   const menuItemPriceMap = new Map<string, number>(
-    menuItems.map((item) => [item.id, Number(item.price)])
+    menuItems.map((item: { id: string; price: number | string | { toString(): string } }) => [
+      item.id,
+      Number(item.price)
+    ])
   );
 
   const subtotal = data.items.reduce((acc, line) => {
