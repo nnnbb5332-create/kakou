@@ -77,6 +77,7 @@ model User {
 
   tenant      Tenant?  @relation(fields: [tenantId], references: [id])
   assignedOrders Order[] @relation("DriverOrders")
+  customerOrders Order[] @relation("CustomerOrders")
   loyaltyAccounts LoyaltyAccount[]
 }
 
@@ -131,7 +132,7 @@ model Order {
   createdAt   DateTime @default(now())
 
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  customer    User?    @relation(fields: [customerId], references: [id])
+  customer    User?    @relation("CustomerOrders", fields: [customerId], references: [id])
   driver      User?    @relation("DriverOrders", fields: [driverId], references: [id])
   items       OrderItem[]
   driverLogs  DriverStatusLog[]
