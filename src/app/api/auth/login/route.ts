@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { signToken, verifyPassword } from "@/lib/auth";
+import { ROLE_VALUES } from "@/lib/roles";
 
 const schema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-  role: z.enum(["SUPER_ADMIN", "RESTAURANT_OWNER", "CASHIER", "DRIVER", "CUSTOMER"])
+  role: z.enum(ROLE_VALUES)
 });
 
 export async function POST(request: Request) {

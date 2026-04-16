@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { JWTPayload, SignJWT, jwtVerify } from "jose";
-import { Role } from "@prisma/client";
+import { AppRole } from "@/lib/roles";
 
 const encoder = new TextEncoder();
 const secret = encoder.encode(process.env.JWT_SECRET || "dev-secret-change-me");
@@ -8,7 +8,7 @@ const secret = encoder.encode(process.env.JWT_SECRET || "dev-secret-change-me");
 export type SessionUser = {
   userId: string;
   tenantId: string | null;
-  role: Role;
+  role: AppRole;
   email: string;
 };
 

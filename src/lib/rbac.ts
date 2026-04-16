@@ -1,6 +1,6 @@
-import { Role } from "@prisma/client";
+import { AppRole } from "@/lib/roles";
 
-export const roleLoginPath: Record<Role, string> = {
+export const roleLoginPath: Record<AppRole, string> = {
   SUPER_ADMIN: "/auth/platform-owner/signin",
   RESTAURANT_OWNER: "/auth/restaurant-owner/signin",
   CASHIER: "/auth/cashier/signin",
@@ -8,8 +8,8 @@ export const roleLoginPath: Record<Role, string> = {
   CUSTOMER: "/tenant/signin"
 };
 
-export function canAccess(role: Role, resource: string) {
-  const matrix: Record<Role, string[]> = {
+export function canAccess(role: AppRole, resource: string) {
+  const matrix: Record<AppRole, string[]> = {
     SUPER_ADMIN: ["*"],
     RESTAURANT_OWNER: ["tenant:*", "orders:*", "menu:*", "employees:*", "analytics:read"],
     CASHIER: ["orders:create", "orders:read", "payments:create", "loyalty:redeem"],
