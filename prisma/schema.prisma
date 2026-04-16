@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  RESTAURANT_OWNER
+  CASHIER
+  DRIVER
+  CUSTOMER
+}
+
+enum RestaurantStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  ASSIGNED
+  PICKED_UP
+  ON_THE_WAY
+  DELIVERED
+  CANCELLED
+}
+
+model Tenant {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  customDomain String?     @unique
+  locale      String       @default("en")
+  theme       String       @default("classic")
+  status      RestaurantStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  restaurant  Restaurant?
+  users       User[]
+  branches    Branch[]
+  categories  MenuCategory[]
+  items       MenuItem[]
+  orders      Order[]
+  promotions  Promotion[]
+  notifications Notification[]
+  subscriptions Subscription[]
+}
+
+model Restaurant {
+  id          String   @id @default(cuid())
+  tenantId    String   @unique
+  brandColor  String   @default("#0f172a")
+  logoUrl     String?
+  description String?
+  pointsRate  Int      @default(10)
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model User {
+  id          String   @id @default(cuid())
+  tenantId    String?
+  email       String   @unique
+  passwordHash String
+  name        String
+  role        Role
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+  assignedOrders Order[] @relation("DriverOrders")
+  loyaltyAccounts LoyaltyAccount[]
+}
+
+model Branch {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  address     String
+  phone       String?
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model MenuCategory {
+  id          String   @id @default(cuid())
+  tenantId    String
+  nameEn      String
+  nameAr      String
+  sortOrder   Int      @default(0)
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  items       MenuItem[]
+}
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  tenantId    String
+  categoryId  String
+  nameEn      String
+  nameAr      String
+  description String?
+  price       Decimal  @db.Decimal(10,2)
+  available   Boolean  @default(true)
+  imageUrl    String?
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  category    MenuCategory @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id          String   @id @default(cuid())
+  tenantId    String
+  customerId  String?
+  driverId    String?
+  status      OrderStatus @default(PENDING)
+  paymentMethod String @default("cash")
+  subtotal    Decimal  @db.Decimal(10,2)
+  discount    Decimal  @default(0) @db.Decimal(10,2)
+  loyaltyRedeemed Int  @default(0)
+  total       Decimal  @db.Decimal(10,2)
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  customer    User?    @relation(fields: [customerId], references: [id])
+  driver      User?    @relation("DriverOrders", fields: [driverId], references: [id])
+  items       OrderItem[]
+  driverLogs  DriverStatusLog[]
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  menuItemId  String
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10,2)
+
+  order       Order    @relation(fields: [orderId], references: [id])
+  menuItem    MenuItem @relation(fields: [menuItemId], references: [id])
+}
+
+model LoyaltyAccount {
+  id          String   @id @default(cuid())
+  userId      String
+  tenantId    String
+  points      Int      @default(0)
+
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Promotion {
+  id          String   @id @default(cuid())
+  tenantId    String
+  title       String
+  couponCode  String?
+  discountPercent Int
+  active      Boolean  @default(true)
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  tenantId    String
+  title       String
+  message     String
+  global      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  tenantId    String
+  planName    String
+  amount      Decimal  @db.Decimal(10,2)
+  active      Boolean  @default(true)
+  renewalDate DateTime
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+}
+
+model DriverStatusLog {
+  id          String   @id @default(cuid())
+  orderId     String
+  status      String
+  timestamp   DateTime @default(now())
+
+  order       Order    @relation(fields: [orderId], references: [id])
+}
